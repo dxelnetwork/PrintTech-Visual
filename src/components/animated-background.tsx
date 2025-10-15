@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRef, useEffect } from 'react';
@@ -16,50 +17,42 @@ const fragmentShader = `
   uniform float u_time;
   uniform vec3 u_color1;
   uniform vec3 u_color2;
+  uniform vec3 u_color3;
+  uniform vec3 u_color4;
   
-  // 2D Simplex Noise
-  vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-
-  float snoise(vec2 v) {
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-    vec2 i  = floor(v + dot(v, C.yy));
-    vec2 x0 = v - i + dot(i, C.xx);
-    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-    vec4 x12 = x0.xyxy + C.xxzz;
-    x12.xy -= i1;
-    i = mod(i, 289.0);
-    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
-    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-    m = m*m;
-    m = m*m;
-    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
-    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
-    vec3 g;
-    g.x  = a0.x  * x0.x  + h.x  * x0.y;
-    g.yz = a0.yz * x12.xw + h.yz * x12.y;
-    return 130.0 * dot(m, g);
-  }
+  vec3 colorA = vec3(0.912,0.191,0.652);
+  vec3 colorB = vec3(1.000,0.777,0.052);
 
   void main() {
     vec2 uv = vUv;
-    float noise = 0.0;
-    
     float time = u_time * 0.1;
     
-    uv *= 2.0; // zoom
+    // Bubble 1
+    vec2 pos1 = vec2(0.5 + 0.3 * sin(time), 0.5 + 0.3 * cos(time));
+    float d1 = distance(uv, pos1);
+    float bubble1 = smoothstep(0.2, 0.1, d1);
     
-    // Add multiple layers of noise
-    noise += snoise(uv + time) * 0.5;
-    noise += snoise(uv * 2.0 + time) * 0.25;
-    noise += snoise(uv * 4.0 + time) * 0.125;
+    // Bubble 2
+    vec2 pos2 = vec2(0.5 + 0.4 * cos(time * 0.8 + 2.0), 0.5 + 0.4 * sin(time * 0.8 + 2.0));
+    float d2 = distance(uv, pos2);
+    float bubble2 = smoothstep(0.3, 0.15, d2);
     
-    noise = (noise + 1.0) / 2.0; // Remap from [-1, 1] to [0, 1]
+    // Bubble 3
+    vec2 pos3 = vec2(0.5 + 0.2 * sin(time * 1.2 + 4.0), 0.5 + 0.2 * cos(time * 1.2 + 4.0));
+    float d3 = distance(uv, pos3);
+    float bubble3 = smoothstep(0.15, 0.05, d3);
+
+    // Bubble 4
+    vec2 pos4 = vec2(0.5 + 0.35 * cos(time * 0.9 - 1.0), 0.5 + 0.35 * sin(time * 0.9 - 1.0));
+    float d4 = distance(uv, pos4);
+    float bubble4 = smoothstep(0.25, 0.1, d4);
     
-    vec3 color = mix(u_color1, u_color2, smoothstep(0.4, 0.6, noise));
+    vec3 color = u_color1 * bubble1 + u_color2 * bubble2 + u_color3 * bubble3 + u_color4 * bubble4;
     
+    // Mix with a base background color
+    vec3 baseColor = mix(u_color1, u_color2, uv.y);
+    color = mix(baseColor, color, 0.7);
+
     gl_FragColor = vec4(color, 1.0);
   }
 `;
@@ -92,10 +85,14 @@ export function AnimatedBackground({ colors }: AnimatedBackgroundProps) {
       u_time: { value: 0.0 },
       u_color1: { value: new THREE.Color(colors[0]) },
       u_color2: { value: new THREE.Color(colors[1]) },
+      u_color3: { value: new THREE.Color('#3A5F0B') },
+      u_color4: { value: new THREE.Color('#FF00FF') },
     };
 
     const targetColor1 = new THREE.Color(colors[0]);
     const targetColor2 = new THREE.Color(colors[1]);
+    const targetColor3 = new THREE.Color('#3A5F0B');
+    const targetColor4 = new THREE.Color('#FF00FF');
 
     const material = new THREE.ShaderMaterial({
       vertexShader,
@@ -115,6 +112,8 @@ export function AnimatedBackground({ colors }: AnimatedBackgroundProps) {
       // Smoothly interpolate colors
       uniforms.u_color1.value.lerp(targetColor1, 0.05);
       uniforms.u_color2.value.lerp(targetColor2, 0.05);
+      uniforms.u_color3.value.lerp(targetColor3, 0.05);
+      uniforms.u_color4.value.lerp(targetColor4, 0.05);
 
       renderer.render(scene, camera);
       animationFrameId = requestAnimationFrame(animate);
