@@ -5,20 +5,18 @@ import type { Section } from '@/lib/content';
 interface FooterProps {
   sections: Section[];
   activeSectionIndex: number;
-  onSectionChange: (index: number) => void;
 }
 
-export function Footer({ sections, activeSectionIndex, onSectionChange }: FooterProps) {
+export function Footer({ sections, activeSectionIndex }: FooterProps) {
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-50 px-8 py-6">
       <nav className="flex items-center justify-center gap-x-4 md:gap-x-10 text-xs md:text-sm font-medium">
         {sections.map((section, index) => (
-          <button
+          <div
             key={section.id}
-            onClick={() => onSectionChange(index)}
             className={`
               relative py-2 transition-colors duration-300
-              ${activeSectionIndex === index ? 'text-primary' : 'text-muted-foreground hover:text-primary'}
+              ${activeSectionIndex === index ? 'text-primary' : 'text-muted-foreground'}
             `}
           >
             {section.navTitle}
@@ -29,7 +27,7 @@ export function Footer({ sections, activeSectionIndex, onSectionChange }: Footer
               `}
               style={{ transformOrigin: 'center' }}
             />
-          </button>
+          </div>
         ))}
       </nav>
     </footer>

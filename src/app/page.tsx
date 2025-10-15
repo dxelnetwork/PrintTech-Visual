@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { sections } from '@/lib/content';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -9,6 +9,14 @@ import { AnimatedBackground } from '@/components/animated-background';
 export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const activeSection = sections[activeIndex];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex((current) => (current + 1) % sections.length);
+    }, 5000); // Change slide every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
@@ -39,7 +47,6 @@ export default function Home() {
       <Footer
         sections={sections}
         activeSectionIndex={activeIndex}
-        onSectionChange={setActiveIndex}
       />
     </div>
   );
